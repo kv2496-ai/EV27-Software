@@ -10,6 +10,27 @@ and its licensor.
 * Developed by: ADIBMS Software team, Bangalore, India
 *****************************************************************************/
 
+/**
+ * @file adBms6830Data.h
+ * @brief Data types for the ADBMS6830 driver: the per-chip @ref cell_asic
+ *        struct, register-field structs, sizes, and option enums.
+ *
+ * The whole driver revolves around one array, `cell_asic IC[TOTAL_IC]`
+ * (declared in adBms_Application.c), with one element per chip in the daisy
+ * chain. Each element holds:
+ * - **what you want to send** (`tx_cfga`, `tx_cfgb`, `PwmA`, ...),
+ * - **what the chip sent back** (`rx_cfga`, `cell`, `aux`, `stata`, ...),
+ * - **raw byte buffers** (`configa.tx_data`, `configa.rx_data`, ...), and
+ * - **error-check results** (`cccrc`).
+ *
+ * @par Bit fields
+ * Many structs use C bit fields, e.g. `uint8_t cth : 3;` means "this field is
+ * only 3 bits wide" (values 0–7). The compiler packs them; you read and write
+ * them like normal struct members.
+ *
+ * @ingroup BMS_DRIVER
+ */
+
 /*! @addtogroup BMS DRIVER
  *  @{
  *
@@ -25,51 +46,61 @@ and its licensor.
 
 #include "common.h"
 
-#define CELL 16          /* Bms ic number of cell              */
-#define AUX 12           /* Bms ic number of Aux               */
-#define RAUX 10          /* Bms ic number of RAux              */
-#define PWMA 12          /* Bms ic number of PWMA              */
-#define PWMB 4           /* Bms ic number of PWMB              */
-#define COMM 3           /* GPIO communication comm reg        */
-#define RSID 6           /* Bms ic number of SID byte          */
-#define TX_DATA 6        /* Bms tx data byte                   */
-#define RX_DATA 8        /* Bms rx data byte                   */
-#define RDCVALL_SIZE 34  /* RDCVALL data byte size             */
-#define RDSALL_SIZE 34   /* RDSALL data byte size              */
-#define RDACALL_SIZE 34  /* RDACALL data byte size             */
-#define RDFCALL_SIZE 34  /* RDFCALL data byte size             */
-#define RDCSALL_SIZE 66  /* RDCSALL data byte size             */
-#define RDASALL_SIZE 70  /* RDASALL data byte size             */
-#define RDACSALL_SIZE 66 /* RDACSALL data byte size            */
+/** @name Sizes
+ *  @{ */
+#define CELL 16          /**< Cell inputs per ADBMS6830 (max 16 cells per chip). */
+#define AUX 12           /**< Auxiliary (GPIO) result slots per chip. */
+#define RAUX 10          /**< Redundant auxiliary result slots per chip. */
+#define PWMA 12          /**< Balancing PWM channels in PWM register A. */
+#define PWMB 4           /**< Balancing PWM channels in PWM register B. */
+#define COMM 3           /**< Bytes in the COMM (GPIO I2C/SPI) register. */
+#define RSID 6           /**< Bytes in the 48-bit serial ID. */
+#define TX_DATA 6        /**< Data bytes per chip in a register write (PEC added separately). */
+#define RX_DATA 8        /**< Bytes per chip in a register read: 6 data + 2 counter/PEC. */
+#define RDCVALL_SIZE 34  /**< Bytes per chip for RDCVALL: 32 data (16 cells x 2) + 2 PEC. */
+#define RDSALL_SIZE 34   /**< Bytes per chip for RDSALL. */
+#define RDACALL_SIZE 34  /**< Bytes per chip for RDACALL. */
+#define RDFCALL_SIZE 34  /**< Bytes per chip for RDFCALL. */
+#define RDCSALL_SIZE 66  /**< Bytes per chip for RDCSALL (C + S results). */
+#define RDASALL_SIZE 70  /**< Bytes per chip for RDASALL (aux + redundant aux + status). */
+#define RDACSALL_SIZE 66 /**< Bytes per chip for RDACSALL. */
+/** @} */
 
-/* For ADBMS6830 config register structure */
+/** @brief Configuration Register A fields. */
 typedef struct {
-    uint8_t refon : 1;
-    uint8_t cth : 3;
-    uint8_t flag_d : 8;
-    uint8_t soakon : 1;
-    uint8_t owrng : 1;
-    uint8_t owa : 3;
-    uint16_t gpo : 10;
-    uint8_t snap : 1;
-    uint8_t mute_st : 1;
-    uint8_t comm_bk : 1;
-    uint8_t fc : 3;
+    uint8_t refon : 1;   /**< 1 = keep the voltage reference powered up between conversions. */
+    uint8_t cth : 3;     /**< C-vs-S comparison threshold (@ref CTH). */
+    uint8_t flag_d : 8;  /**< Diagnostic force flags, one bit per @ref FLAG_D. */
+    uint8_t soakon : 1;  /**< Enable open-wire soak time. */
+    uint8_t owrng : 1;   /**< Soak time range (@ref OWRNG). */
+    uint8_t owa : 3;     /**< Soak time step (@ref OWA). */
+    uint16_t gpo : 10;   /**< GPIO output levels, bit n = GPIO(n+1). */
+    uint8_t snap : 1;    /**< Snapshot status. */
+    uint8_t mute_st : 1; /**< Discharge mute status. */
+    uint8_t comm_bk : 1; /**< Communication break (@ref COMM_BK). */
+    uint8_t fc : 3;      /**< IIR filter setting (@ref IIR_FPA). */
 } cfa_;
 
-/* For ADBMS6830 config register structure */
+/** @brief Configuration Register B fields. */
 typedef struct {
+    /** Under-voltage threshold (12-bit code). Set with SetUnderVoltageThreshold(). */
     uint16_t vuv : 16;
+    /** Over-voltage threshold (12-bit code). Set with SetOverVoltageThreshold(). */
     uint16_t vov : 16;
-    uint8_t dtmen : 1;
-    uint8_t dtrng : 1;
-    uint8_t dcto : 6;
-    uint16_t dcc : 16;
+    uint8_t dtmen : 1; /**< Enable discharge timer monitor. */
+    uint8_t dtrng : 1; /**< Discharge timer range (@ref DTRNG). */
+    uint8_t dcto : 6;  /**< Discharge timeout (@ref DCTO). */
+    uint16_t dcc : 16; /**< Balancing switch per cell: bit n = cell n+1. 1 = discharging. */
 } cfb_;
 
-/* Cell Voltage Data structure */
+/**
+ * @brief Cell voltage results (C-ADC).
+ *
+ * Raw signed codes. Convert to volts with `c_codes[k] * 0.000150 + 1.5`
+ * (150 uV per LSB, 1.5 V offset). Example: code 13500 -> 3.525 V.
+ */
 typedef struct {
-    int16_t c_codes[CELL]; /* Cell Voltage Codes */
+    int16_t c_codes[CELL]; /**< Raw code for cell k (index 0 = cell 1). */
 } cv_;
 
 typedef struct {
@@ -194,9 +225,15 @@ typedef struct {
     uint8_t rx_data[RX_DATA];
 } ic_register_;
 
-/* Command counter and pec error data Structure */
+/**
+ * @brief Command counter and PEC-error flags for one chip.
+ *
+ * After each adBmsReadData() call, the flag for that kind of data is 0 if the
+ * data passed its CRC-10 check, or 1 if it was corrupted and must not be
+ * trusted. The application treats repeated errors as a lost connection.
+ */
 typedef struct {
-    uint8_t cmd_cntr;
+    uint8_t cmd_cntr; /**< Chip's 6-bit command counter from the last read. */
     uint8_t cfgr_pec;
     uint8_t cell_pec;
     uint8_t acell_pec;
@@ -236,40 +273,45 @@ typedef struct {
     int aux_pup_down[(AUX - 2)];
 } aux_ow_;
 
-/* BMS ic main structure */
+/**
+ * @brief Everything the driver knows about one ADBMS6830 chip.
+ *
+ * Make an array of these, one per chip in the daisy chain, and pass it to
+ * the driver functions. Element 0 is the chip closest to the MCU.
+ */
 typedef struct {
-    cfa_ tx_cfga;
-    cfa_ rx_cfga;
-    cfb_ tx_cfgb;
-    cfb_ rx_cfgb;
-    clrflag_ clflag;
-    cv_ cell;
-    acv_ acell;
-    scv_ scell;
-    fcv_ fcell;
-    ax_ aux;
-    rax_ raux;
-    sta_ stata;
-    stb_ statb;
-    stc_ statc;
-    std_ statd;
-    ste_ state;
-    com_ comm;
-    pwma_ PwmA;
-    pwmb_ PwmB;
-    sid_ sid;
-    ic_register_ configa;
-    ic_register_ configb;
-    ic_register_ clrflag;
-    ic_register_ stat;
-    ic_register_ com;
-    ic_register_ pwma;
-    ic_register_ pwmb;
-    ic_register_ rsid;
-    cmdcnt_pec_ cccrc;
-    aux_ow_ gpio;
-    cell_ow_ owcell;
-    diag_test_ diag_result;
+    cfa_ tx_cfga;           /**< Config A to WRITE (you set this). */
+    cfa_ rx_cfga;           /**< Config A as READ back from the chip. */
+    cfb_ tx_cfgb;           /**< Config B to WRITE (thresholds, balancing bits). */
+    cfb_ rx_cfgb;           /**< Config B as READ back. */
+    clrflag_ clflag;        /**< Fault flags to clear with CLRFLAG. */
+    cv_ cell;               /**< Cell voltages (main ADC). */
+    acv_ acell;             /**< Averaged cell voltages. */
+    scv_ scell;             /**< Redundant (S-ADC) cell voltages. */
+    fcv_ fcell;             /**< Filtered cell voltages. */
+    ax_ aux;                /**< Aux/GPIO voltages (temperature sensors). */
+    rax_ raux;              /**< Redundant aux voltages. */
+    sta_ stata;             /**< Status A: references, die temperature. */
+    stb_ statb;             /**< Status B: supply voltages. */
+    stc_ statc;             /**< Status C: fault bits. */
+    std_ statd;             /**< Status D: per-cell OV/UV flags. */
+    ste_ state;             /**< Status E: GPIO inputs, revision. */
+    com_ comm;              /**< COMM register contents. */
+    pwma_ PwmA;             /**< Balancing PWM duty, cells 1-12 (@ref PWM_DUTY). */
+    pwmb_ PwmB;             /**< Balancing PWM duty, cells 13-16. */
+    sid_ sid;               /**< 48-bit serial ID, sid[0] = least significant byte. */
+    ic_register_ configa;   /**< Raw bytes for Config A (tx_data sent, rx_data received). */
+    ic_register_ configb;   /**< Raw bytes for Config B. */
+    ic_register_ clrflag;   /**< Raw bytes for CLRFLAG. */
+    ic_register_ stat;      /**< Raw bytes for the last status register read. */
+    ic_register_ com;       /**< Raw bytes for COMM. */
+    ic_register_ pwma;      /**< Raw bytes for PWM A. Rebuilt from PwmA on every write. */
+    ic_register_ pwmb;      /**< Raw bytes for PWM B. Rebuilt from PwmB on every write. */
+    ic_register_ rsid;      /**< Raw bytes for the serial ID. */
+    cmdcnt_pec_ cccrc;      /**< PEC error flags and command counter. */
+    aux_ow_ gpio;           /**< Aux open-wire test scratch data. */
+    cell_ow_ owcell;        /**< Cell open-wire test scratch data. */
+    diag_test_ diag_result; /**< Results of the built-in self tests. */
 } cell_asic;
 
 /*!
@@ -577,8 +619,18 @@ typedef enum {
 /* Discharge cell set and claer  */
 typedef enum { DCC_BIT_CLR = 0x0, DCC_BIT_SET = 0x1 } DCC_BIT;
 
-/* General Enums */
+/**
+ * @brief Register group selector.
+ *
+ * Results are split across several 6-byte register groups (A, B, C, ...).
+ * @c ALL_GRP is used with the "read all" commands (RDCVALL etc.); @c NONE is
+ * for registers that have no groups (e.g. the serial ID).
+ */
 typedef enum { ALL_GRP = 0x0, A, B, C, D, E, F, NONE } GRP;
+/**
+ * @brief What kind of register is being read or written. Tells
+ *        adBmsReadData() / adBmsWriteData() which parse/create function to use.
+ */
 typedef enum {
     Cell = 0x0,
     Aux,

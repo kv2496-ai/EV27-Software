@@ -1,0 +1,51 @@
+# Doxygen config for the EV27 ADBMS6830 BMS driver.
+#
+# Generate the docs (run from this folder):
+#     doxygen Doxyfile
+# Then open docs/html/index.html in a browser.
+#
+# Only settings that differ from Doxygen's defaults are listed here.
+
+PROJECT_NAME           = "EV27 ADBMS6830 BMS Driver"
+PROJECT_BRIEF          = "Battery-management firmware for the Columbia FSAE EV27 tractive battery"
+OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = NO
+
+# Inputs: the driver headers (where the API docs live), their .c files
+# (so Doxygen can draw call graphs and link to source), and the docs pages.
+INPUT                  = docs/mainpage.md \
+                         docs/known_issues.md \
+                         lib/inc \
+                         lib/src \
+                         program/inc/mcuWrapper.h \
+                         program/src/mcuWrapper.c \
+                         program/inc/adBms_Application.h \
+                         program/src/adBms_Application.c
+FILE_PATTERNS          = *.h *.c *.md
+RECURSIVE              = NO
+USE_MDFILE_AS_MAINPAGE = docs/mainpage.md
+
+# C project: show structs/enums as C, not C++ classes.
+OPTIMIZE_OUTPUT_FOR_C  = YES
+TYPEDEF_HIDES_STRUCT   = YES
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+JAVADOC_AUTOBRIEF      = YES
+MARKDOWN_SUPPORT       = YES
+
+# Output: HTML only.
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+HTML_OUTPUT            = html
+GENERATE_TREEVIEW      = YES
+SOURCE_BROWSER         = YES
+
+# Diagrams need Graphviz ("dot"). Set to NO if it isn't installed.
+HAVE_DOT               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+
+# Warnings: list undocumented items so we know what's left.
+WARN_IF_UNDOCUMENTED   = YES
+WARN_LOGFILE           = docs/doxygen_warnings.txt
+QUIET                  = YES

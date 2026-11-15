@@ -9,6 +9,25 @@ and its licensor.
 * @date:    $Date$
 * Developed by: ADIBMS Software team, Bangalore, India
 *****************************************************************************/
+
+/**
+ * @file adBms6830CmdList.h
+ * @brief The 2-byte command codes for every ADBMS6830 command
+ *        (WRCFGA, RDCVA, SNAP, ...).
+ *
+ * Pass these arrays as the `tx_cmd` / `cmd_arg` argument of spiSendCmd(),
+ * adBmsReadData() and adBmsWriteData(). The driver adds the PEC15 bytes.
+ * Naming: `WR*` = write, `RD*` = read, `CL*` = clear, `PL*` = poll;
+ * the trailing letter is the register group (e.g. `RDCVB` = read cell
+ * voltages, group B).
+ *
+ * @warning These arrays are *defined* (not just declared) in this header,
+ *          so it must only be included from one .c file
+ *          (currently adBms_Application.c). Including it in a second file
+ *          gives "multiple definition" linker errors.
+ *
+ * @ingroup BMS_DRIVER
+ */
 /*! @addtogroup BMS_DRIVER
  *  @{
  *
