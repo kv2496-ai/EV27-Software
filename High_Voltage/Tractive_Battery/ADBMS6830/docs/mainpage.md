@@ -81,10 +81,9 @@ graphs.
 
 ## Testing without hardware
 
-Everything above the MCU wrapper can run on a laptop. Replace the functions
-in `mcuWrapper.h` with fakes (the fff library), then use Unity to check the
-bytes the driver sends and how it decodes canned replies. The pure functions
-(`Pec15_Calc`, `pec10_calc`, `SetOverVoltageThreshold`, all
-`adBms6830Parse*` / `adBms6830Create*`) need no fakes at all.
+Everything above the MCU wrapper runs on a laptop: `cd tests && make`.
+The tests replace the functions in `mcuWrapper.h` with fakes (fff) and use
+Unity to check the bytes the driver sends and how it decodes canned
+replies. See `tests/README.md` for how to add a test.
 
 See @ref known_issues for bugs found while writing these docs.

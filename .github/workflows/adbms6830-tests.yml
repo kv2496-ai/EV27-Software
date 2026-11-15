@@ -1,0 +1,40 @@
+name: ADBMS6830 Unit Tests
+
+# Builds and runs the host-side Unity + fff tests for the ADBMS6830 BMS
+# driver (High_Voltage/Tractive_Battery/ADBMS6830/tests) with plain gcc and
+# AddressSanitizer. No STM32 toolchain or hardware needed.
+#
+# Run locally:  cd High_Voltage/Tractive_Battery/ADBMS6830/tests && make
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'High_Voltage/Tractive_Battery/ADBMS6830/**'
+      - '.github/workflows/adbms6830-tests.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'High_Voltage/Tractive_Battery/ADBMS6830/**'
+      - '.github/workflows/adbms6830-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: ADBMS6830 driver tests
+    defaults:
+      run:
+        working-directory: High_Voltage/Tractive_Battery/ADBMS6830/tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and run tests
+        run: make
+
+      - name: Report known issues (informational, never fails)
+        if: always()
+        run: make known-issues

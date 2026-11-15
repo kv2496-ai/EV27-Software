@@ -1,8 +1,10 @@
 # Known issues {#known_issues}
 
 Found while documenting the driver (November 2026). None of these have been
-fixed in this change; the docs only describe the current behaviour. Each one
-makes a good first unit test: write a test that fails, then fix the code.
+fixed yet. Issue 2 is pinned down by
+`test_write_pwm_uses_PwmA_not_raw_tx_data` and issue 3 by
+`tests/test_known_issues.c`. Issues 1 and 4 are in the application layer,
+which the host tests don't build yet.
 
 ## 1. Cell balancing writes past the end of `IC[]`
 
@@ -28,6 +30,9 @@ written. Also, `0x4` is `PWM_26_4_PCT`, not 50% as the comment says. Fix:
 set `PwmA.pwma[]` (or call `SetPwmDutyCycle()`) instead.
 
 ## 3. "Read all" commands overflow their buffer with more than one IC
+
+*Reproduced by `make known-issues` in `tests/` (AddressSanitizer reports a
+heap-buffer-overflow in `spiReadData()`).*
 
 **Where:** `adBmsReadData()` with `group == ALL_GRP`, adBms6830GenericType.c
 

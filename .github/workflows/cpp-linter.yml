@@ -68,7 +68,9 @@ jobs:
           matrix='[]'
           if [ "${{ steps.filter.outputs.Tractive_Battery }}" = "true" ]; then
             path='High_Voltage/Tractive_Battery'
-            ignore=".github|$non_firmware|$path/Drivers|$path/cmake/stm32cubemx|$(echo "$all_paths" | tr '|' '\n' | grep -vF "$path" | paste -sd'|')"
+            # ADBMS6830/tests is host-only test code (built with gcc by
+            # adbms6830-tests.yml, not in compile_commands.json), so skip it.
+            ignore=".github|$non_firmware|$path/Drivers|$path/cmake/stm32cubemx|$path/ADBMS6830/tests|$(echo "$all_paths" | tr '|' '\n' | grep -vF "$path" | paste -sd'|')"
             matrix=$(echo "$matrix" | jq -c --arg path "$path" --arg ignore "$ignore" \
               '. + [{"project":"Tractive_Battery","path":$path,"ignore":$ignore}]')
           fi

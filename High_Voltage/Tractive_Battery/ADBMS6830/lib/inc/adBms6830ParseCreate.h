@@ -66,9 +66,12 @@ and its licensor.
  * @brief Convert an over-voltage threshold in volts to the 12-bit VOV
  *        register value.
  *
- * Formula: `((volt - 1.5) / (16 * 150e-6) + 2048) & 0xFFF`.
- * (The ADC LSB is 150 µV, cell codes are offset by 1.5 V, and the threshold
- * register has 1/16 the resolution of a cell code.)
+ * Formula: `(uint16_t)((volt - 1.5) / (16 * 150e-6) + 4096) & 0xFFF`.
+ * Each threshold step is 16 x 150 µV = 2.4 mV above 1.5 V. Adding 4096 and
+ * masking to 12 bits turns a negative result (volt < 1.5 V) into its 12-bit
+ * two's-complement form; for normal thresholds it has no effect.
+ * Example: 4.25 V -> 1145, 2.5 V -> 416. The fraction is truncated, not
+ * rounded.
  *
  * @param[in] volt Threshold in volts (e.g. 4.25f).
  * @return 12-bit value to store in `ic[n].tx_cfgb.vov`.
